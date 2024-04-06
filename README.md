@@ -3,3 +3,4 @@
 
 - HW1 : simple code using Pillow and Numpy library
 - HW2 : Gaussian filtering and making a hybrid image.
+- HW3 : Canny Edge Detection
