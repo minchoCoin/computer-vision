@@ -66,8 +66,11 @@ def reduce_noise(img):
         res: gray scale gaussian filtered image (H, W).
     """
     #implement
+    #convert the image to grayscale
     img = img.convert('L')
+    #convert the image to array(type=float32)
     res = np.asarray(img,dtype=np.float32)
+    #apply gauss filter to the image(sigma=1.6)
     res = gaussconvolve2d(res,1.6)
     return res
 
@@ -84,14 +87,32 @@ def sobel_filters(img):
         - Use np.hypot and np.arctan2 to calculate square root and arctan
     """
     #implement 
-    s_x = np.array([[-1,0,1],[-2,0,2],[-1,0,1]],dtype=np.float32)
-    s_y = np.array([[1,2,1],[0,0,0],[-1,-2,-1]],dtype=np.float32)
+    '''
+    s_x : X_filter : 
+    1 0 -1
+    2 0 -2
+    1 0 -1
 
+    s_y : Y_filter : 
+    -1 -2 -1
+    0  0  0
+    1  2  1
+    '''
+    s_x = np.array([[1,0,-1],[2,0,-2],[1,0,-1]],dtype=np.float32)
+    s_y = np.array([[-1,-2,-1],[0,0,0],[1,2,1]],dtype=np.float32)
+
+    #apply sobel filters to the image
     convolve_x = convolve2d(img,s_x)
     convolve_y = convolve2d(img,s_y)
 
+    #obtaining Gradient : G = sqrt(convolve_x^2 + convolve_y^2)
     G = np.hypot(convolve_x,convolve_y)
+
+    #mapped the gradient value between 0~255
     G = G/G.max()*255
+
+    #obtaining Theta : theta = arctan(convolve_y/convolve_x)
+    #result of np.arctan2 : +/-0 ~ +/- pi
     theta = np.arctan2(convolve_y, convolve_x,dtype=np.float32)
 
     return (G, theta)
@@ -106,15 +127,18 @@ def non_max_suppression(G, theta):
     Returns:
         res: non-maxima suppressed image.
     """
+    #convert to radian value to degree value
+    #we don't need to know whether the angle is clockwise(CW) or counterclockwise(CCW)
     deg = np.abs(np.rad2deg(theta))
     size = G.shape
 
+    #make numpy array for storing the result
     res = np.zeros_like(G,dtype=np.float32)
     
-    # 22.5~67.5 : 45
-    # 67.5~112.5 : 90
-    # 112.5~157.5 : 135
-    #else : 0
+    # 22.5~67.5 : approximating to 45 : comparing values at a 45 degree and a 235 degree
+    # 67.5~112.5 : approximating to 90 : comparing values at a 90 degree and a 270 degree
+    # 112.5~157.5 : approximating to 135 : comparing values at a 135 degree and a 315 degree
+    #else : approximating to 0
     nearMax=0
     for i in range(1,size[0]-1):
         for j in range(1,size[1]-1):
@@ -130,6 +154,7 @@ def non_max_suppression(G, theta):
 
             if G[i,j]>=nearMax:
                 res[i,j] = G[i,j]
+    #mapped the result to between 0-255
     res = res/res.max() * 255
     return res
 
@@ -142,21 +167,23 @@ def double_thresholding(img):
     """
     #implement     
 
-    max = np.max(img)
-    min = np.min(img[img>0])
+    max = np.max(img) #obtaining the max value
+    min = np.min(img[img>0]) #obtaining the min value(except 0)
     
-    diff = max-min
-    t_high = min + diff * 0.15
-    t_low = min + diff * 0.03
+    diff = max-min #obtaining diff
+    t_high = min + diff * 0.15 #obtaining high threshold
+    t_low = min + diff * 0.03  #obtaining low threshold
 
     size = img.shape
 
+    #make an numpy array for storing the result
     res = np.zeros_like(img,dtype=np.float32)
 
+    #mapping weak edge to 80
     res = np.where(img>=t_low,80,0)
-    res = np.where(img>=t_high,255,res)
 
-    
+    #mapping strong edge to 255
+    res = np.where(img>=t_high,255,res)
 
     return res
 
@@ -191,14 +218,15 @@ def hysteresis(img):
     """
     #implement 
 
+    #making a numpy array for storing the result
     res = np.zeros_like(img,dtype=np.float32)
 
     size = img.shape
-    visited = []
+    visited = [] #storing visited points
     for i in range(1,size[0]-1):
         for j in range(1,size[1]-1):
-            if img[i,j] == 255 and (i,j) not in visited:
-                dfs(img,res,i,j,visited)
+            if img[i,j] == 255 and (i,j) not in visited: #if the point is strong edge and not visited
+                dfs(img,res,i,j,visited) #visiting and doing DFS
 
     return res
 
