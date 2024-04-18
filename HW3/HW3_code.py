@@ -128,8 +128,11 @@ def non_max_suppression(G, theta):
         res: non-maxima suppressed image.
     """
     #convert to radian value to degree value
-    #we don't need to know whether the angle is clockwise(CW) or counterclockwise(CCW)
-    deg = np.abs(np.rad2deg(theta))
+    deg = np.rad2deg(theta)
+
+    #if degree<0 then add 180
+    deg[deg<0] +=180
+
     size = G.shape
 
     #make numpy array for storing the result
@@ -144,15 +147,15 @@ def non_max_suppression(G, theta):
         for j in range(1,size[1]-1):
             nearMax=0
             if 22.5<=deg[i,j]<67.5:
-                nearMax = max(G[i-1,j-1],G[i+1,j+1])
+                nearMax = max(G[i-1,j+1],G[i+1,j-1])
             elif 67.5<=deg[i,j]<112.5:
                 nearMax = max(G[i-1,j],G[i+1,j])
             elif 112.5<=deg[i,j]<157.5:
-                nearMax = max(G[i+1,j-1],G[i-1,j+1])
+                nearMax = max(G[i-1,j-1],G[i+1,j+1])
             else:
                 nearMax = max(G[i,j+1],G[i,j-1])
 
-            if G[i,j]>=nearMax:
+            if G[i,j]>nearMax:
                 res[i,j] = G[i,j]
     #mapped the result to between 0-255
     res = res/res.max() * 255
